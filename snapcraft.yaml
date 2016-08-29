@@ -1,5 +1,5 @@
 name: cf
-version: v6.21.1
+version: master
 summary:  The official command line client for Cloud Foundry.
 description: |
   A tool to deploy and manage Cloud Foundry applications.
