@@ -14,6 +14,6 @@ parts:
     cli:
       source: .
       plugin: go
-      go-importpath: github.com/cloudfoundry/cli
-      go-packages: [github.com/cloudfoundry/cli]
+      go-importpath: code.cloudfoundry.org/cli
+      go-packages: [code.cloudfoundry.org/cli]
       build-packages: [g++, git]
