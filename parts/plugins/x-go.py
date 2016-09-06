@@ -11,6 +11,14 @@ For more information check the 'plugins' topic for the former and the
 
 Additionally, this plugin uses the following plugin-specific keywords:
 
+    - go-packages:
+      (list of strings)
+      Go packages to fetch, these must be a "main" package. Dependencies
+      are pulled in automatically by `go get`.
+      Packages that are not "main" will not cause an error, but would
+      not be useful either.
+      If the package is a part of the go-importpath the local package
+      corresponding to those sources will be used.
     - go-importpath:
       (string)
       This entry tells the checked out `source` to live within a certain path
@@ -37,6 +45,15 @@ class GoPlugin(snapcraft.BasePlugin):
     @classmethod
     def schema(cls):
         schema = super().schema()
+        schema['properties']['go-packages'] = {
+            'type': 'array',
+            'minitems': 1,
+            'uniqueItems': True,
+            'items': {
+                'type': 'string',
+            },
+            'default': [],
+        }
         schema['properties']['go-importpath'] = {
             'type': 'string',
             'default': ''
@@ -55,11 +72,12 @@ class GoPlugin(snapcraft.BasePlugin):
 
         # Inform Snapcraft of the properties associated with pulling. If these
         # change in the YAML Snapcraft will consider the pull step dirty.
-        schema['pull-properties'].append('go-importpath')
+        schema['pull-properties'].extend(['go-importpath', 'go-packages'])
 
         # Inform Snapcraft of the properties associated with building. If these
         # change in the YAML Snapcraft will consider the build step dirty.
-        schema['build-properties'].extend(['source', 'go-importpath'])
+        schema['build-properties'].extend(
+            ['source', 'go-importpath', 'go-packages'])
 
         return schema
 
@@ -92,6 +110,9 @@ class GoPlugin(snapcraft.BasePlugin):
         self._run(
             [self.go_bin, 'get', '-t', '-d', './{}/...'.format(go_package)])
 
+        for go_package in self.options.go_packages:
+            self._run([self.go_bin, 'get', '-t', '-d', go_package])
+
     def clean_pull(self):
         super().clean_pull()
 
@@ -102,11 +123,8 @@ class GoPlugin(snapcraft.BasePlugin):
     def build(self):
         super().build()
 
-        tags = []
-        if self.options.go_buildtags:
-            tags = ['-tags={}'.format(','.join(self.options.go_buildtags))]
-        self._run([self.go_bin, 'install'] + tags +
-                  ['./{}/...'.format(self.options.go_importpath)])
+        for go_package in self.options.go_packages:
+            self._run([self.go_bin, 'install', go_package])
 
         install_bin_path = os.path.join(self.installdir, 'bin')
         os.makedirs(install_bin_path, exist_ok=True)
